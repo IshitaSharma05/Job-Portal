@@ -1,0 +1,75 @@
+package com.ish.jobportal.services;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ish.jobportal.entity.IRecruiterJobs;
+import com.ish.jobportal.entity.JobCompany;
+import com.ish.jobportal.entity.JobLocation;
+import com.ish.jobportal.entity.JobPostActivity;
+import com.ish.jobportal.entity.RecruiterJobsDto;
+import com.ish.jobportal.repository.JobPostActivityRepository;
+import com.ish.jobportal.repository.JobSeekerApplyRepository;
+import com.ish.jobportal.repository.JobSeekerSaveRepository;
+
+@Service
+public class JobPostActivityService {
+
+    private final JobPostActivityRepository jobPostActivityRepository;
+    private final JobSeekerApplyRepository jobSeekerApplyRepository;
+    private final JobSeekerSaveRepository jobSeekerSaveRepository;
+
+    public JobPostActivityService(JobPostActivityRepository jobPostActivityRepository, JobSeekerApplyRepository jobSeekerApplyRepository, JobSeekerSaveRepository jobSeekerSaveRepository) {
+        this.jobPostActivityRepository = jobPostActivityRepository;
+        this.jobSeekerApplyRepository = jobSeekerApplyRepository;
+        this.jobSeekerSaveRepository = jobSeekerSaveRepository;
+    }
+
+    public JobPostActivity addNew(JobPostActivity jobPostActivity) {
+        return jobPostActivityRepository.save(jobPostActivity);
+    }
+   @Transactional
+    public void deleteById(int id) {
+        JobPostActivity job = jobPostActivityRepository.findById(id).orElse(null);
+        if (job != null) {
+            jobSeekerApplyRepository.deleteByJob(job);
+            jobSeekerSaveRepository.deleteByJob(job);
+            jobPostActivityRepository.deleteById(id);
+        }
+    }
+       
+
+    public List<RecruiterJobsDto> getRecruiterJobs(int recruiter) {
+
+        List<IRecruiterJobs> recruiterJobsDtos = jobPostActivityRepository.getRecruiterJobs(recruiter);
+
+        List<RecruiterJobsDto> recruiterJobsDtoList = new ArrayList<>();
+
+        for (IRecruiterJobs rec : recruiterJobsDtos) {
+            JobLocation loc = new JobLocation(rec.getLocationId(), rec.getCity(), rec.getState(), rec.getCountry());
+            JobCompany comp = new JobCompany(rec.getCompanyId(), rec.getName(), "");
+            recruiterJobsDtoList.add(new RecruiterJobsDto(rec.getTotalCandidates(), rec.getJob_post_id(),
+                    rec.getJob_title(), loc, comp));
+        }
+        return recruiterJobsDtoList;
+
+    }
+
+    public JobPostActivity getOne(int id) {
+        return jobPostActivityRepository.findById(id).orElseThrow(()->new RuntimeException("Job not found"));
+    }
+
+    public List<JobPostActivity> getAll() {
+        return jobPostActivityRepository.findAll();
+    }
+
+    public List<JobPostActivity> search(String job, String location, List<String> type, List<String> remote, LocalDate searchDate) {
+        return Objects.isNull(searchDate) ? jobPostActivityRepository.searchWithoutDate(job, location, remote,type) :
+                jobPostActivityRepository.search(job, location, remote, type, searchDate);
+    }
+}
