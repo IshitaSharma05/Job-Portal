@@ -22,9 +22,3 @@ This app was my learning, used as an open source
 - Thymeleaf
 - MySQL
 - Maven
-
-## ▶️ How to Run
-
-1. Create MySQL database:
-   ```sql
-   CREATE DATABASE jobportal;
